@@ -11,5 +11,5 @@ CREATE TABLE github_profiles (
     following INT,
     profile_url VARCHAR(255),
     avatar_url TEXT,
-    analyzed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    account_created_at DATETIME
 );
