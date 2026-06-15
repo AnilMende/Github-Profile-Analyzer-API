@@ -14,7 +14,7 @@ This project was developed as part of a Node.js Internship Assignment and includ
 
 * URL : https://github-profile-analyzer-pjwe.onrender.com/
 
-# Deployment Platform :
+## Deployment Platform :
 * Backend : Render
 * Database : Railway
 
@@ -69,7 +69,6 @@ This project was developed as part of a Node.js Internship Assignment and includ
 ## Project Structure
 
 ```text
-src/
 │
 ├── config/
 │   └── db.js
@@ -189,8 +188,6 @@ Stores or updates GitHub profile insights.
 
 ```http
 POST /api/github/analyze/:username
-
-Example : /api/github/analyze/octocat
 ```
 
 Example:
@@ -204,6 +201,12 @@ POST /api/github/analyze/octocat
 ### Get All Profiles
 
 Returns all analyzed profiles.
+
+```http
+GET /api/github/profiles
+```
+
+Example:
 
 ```http
 GET /api/github/profiles
@@ -295,7 +298,7 @@ Anil Kumar
 Backend-Focused Full Stack Developer
 
 GitHub: https://github.com/AnilMende
-LinkedIn: <your-linkedin-profile>
+LinkedIn: https://linkedin.com/in/mende-anilkumar-284791228/
 
 ```
 ```
