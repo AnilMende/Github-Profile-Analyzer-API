@@ -1,5 +1,6 @@
-import { fetchGithubProfile } from "../services.js/githubService.js";
+import { fetchGithubProfile, fetchGithubRepos } from "../services.js/githubService.js";
 import pool from "../config/db.js";
+import { calculateAccountAge, calculateLanguageStats, calculateTotalStars, getMostStarredRepo, getTopLanguage } from "../utils/githubUtils.js";
 
 export const analyzeProfile = async (req, res) => {
 
@@ -8,6 +9,19 @@ export const analyzeProfile = async (req, res) => {
         const { username } = req.params;
 
         const profile = await fetchGithubProfile(username);
+
+        const repos = await fetchGithubRepos(username);
+
+        const languageStats = calculateLanguageStats(repos);
+
+        const accountAgeYears = calculateAccountAge(profile.created_at);
+
+        const topLanguage = getTopLanguage(languageStats);
+
+        const totalStars = calculateTotalStars(repos);
+
+        const mostStarredRepo = getMostStarredRepo(repos);
+
 
         const profileData = {
             username: profile.login,
@@ -18,8 +32,65 @@ export const analyzeProfile = async (req, res) => {
             following: profile.following,
             profile_url: profile.html_url,
             avatar_url: profile.avatar_url,
-            account_created_at: profile.account_created_at
+            account_created_at: profile.created_at,
+            account_age_years: accountAgeYears,
+            language_stats: JSON.stringify(languageStats),
+            top_language: topLanguage,
+            total_stars: totalStars,
+            most_starred_repo: mostStarredRepo
         };
+
+        const [existingProfile] = await pool.query(
+            "SELECT id FROM github_profiles WHERE username = ?",
+            [profile.login]
+        );
+
+        // if the user exists just update the data:
+        if (existingProfile.length > 0) {
+
+            await pool.query(
+                `
+        UPDATE github_profiles
+        SET
+            name = ?,
+            bio = ?,
+            public_repos = ?,
+            followers = ?,
+            following = ?,
+            profile_url = ?,
+            avatar_url = ?,
+            account_created_at = ?,
+            account_age_years = ?,
+            language_stats = ?,
+            top_language = ?,
+            total_stars = ?,
+            most_starred_repo = ?
+        WHERE username = ?
+        `,
+                [
+                    profileData.name,
+                    profileData.bio,
+                    profileData.public_repos,
+                    profileData.followers,
+                    profileData.following,
+                    profileData.profile_url,
+                    profileData.avatar_url,
+                    profileData.created_at,
+                    profileData.account_age_years,
+                    profileData.language_stats,
+                    profileData.top_language,
+                    profileData.total_stars,
+                    profileData.most_starred_repo,
+                    profileData.username
+                ]
+            );
+
+            return res.status(200).json({
+                success: true,
+                message: "Profile updated successfully",
+                data: profileData
+            });
+        }
 
         const query = `
             INSERT INTO github_profiles
@@ -32,9 +103,14 @@ export const analyzeProfile = async (req, res) => {
                 following,
                 profile_url,
                 avatar_url,
-                account_created_at
+                account_created_at,
+                account_age_years,
+                language_stats,
+                top_language,
+                total_stars,
+                most_starred_repo
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
         await pool.query(query, [
@@ -46,7 +122,12 @@ export const analyzeProfile = async (req, res) => {
             profileData.following,
             profileData.profile_url,
             profileData.avatar_url,
-            profileData.account_created_at
+            profileData.created_at,
+            profileData.account_age_years,
+            profileData.language_stats,
+            profileData.top_language,
+            profileData.total_stars,
+            profileData.most_starred_repo
         ]);
 
 
@@ -114,18 +195,25 @@ export const getProfileByUsername = async (req, res) => {
             });
         };
 
+
+        const profile = profiles[0];
+
+        profile.language_stats = JSON.parse(
+            profile.language_stats || "{}"
+        );
+
         return res.status(200).json({
 
-            success : true,
-            data : profiles[0]
+            success: true,
+            data: profile
         });
 
     } catch (error) {
 
         return res.status(200).json({
-            success : false,
-            message : error.message
+            success: false,
+            message: error.message
         });
-        
+
     }
 }
